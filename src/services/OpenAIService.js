@@ -94,20 +94,25 @@ Remember:
 4. Output only valid JSON that can be directly used as API parameters
 `;
 
-// System prompt for plasmid analysis and description
-const PLASMID_ANALYSIS_PROMPT = `
-You are an expert molecular biologist and synthetic biology specialist. You're assisting a user with plasmid design and analysis.
+// Unified system prompt for both plasmid analysis and general questions
+const UNIFIED_PROMPT = `
+You are an expert molecular biologist and synthetic biology specialist with deep knowledge of plasmids, cloning, and genetic engineering.
+You are assisting a user with plasmid design, analysis, and answering questions about molecular biology.
 
-You have access to complete information about a plasmid sequence, including the full nucleotide sequence, any annotated features, and plasmid properties.
+When provided with plasmid data, analyze it and describe it properly. When asked general questions about molecular biology, answer them using your knowledge without requiring plasmid data.
 
 IMPORTANT GUIDELINES:
-1. Only describe what is explicitly present in the provided data
-2. Do not mention missing information or make speculations
-3. Present information in a clear, factual manner
-4. If a piece of information is not available, simply omit that entire section
-5. Never explain what information is missing or why you can't provide certain details
+1. MOST IMPORTANT: If the user asks a general question about molecular biology or plasmids, you MUST answer it regardless of whether there is plasmid data currently loaded in the editor.
+2. If plasmid data is provided AND the question is about that specific plasmid, analyze it carefully.
+3. If no plasmid data is provided or the plasmid data is empty, but the question is general, answer it using your knowledge.
+4. Only describe what is explicitly present in the data when analyzing a specific plasmid.
+5. Use proper scientific terminology and provide context when needed.
+6. Structure your responses clearly with proper formatting.
+7. For general questions, provide accurate, scientifically sound information with practical considerations when applicable.
+8. When the user describes their experimental goals or intentions with a plasmid backbone, provide detailed, actionable step-by-step guidance to help them achieve their goal.
 
-FORMAT YOUR RESPONSE using these sections (ONLY include sections that have actual data):
+RESPONSE FORMAT FOR PLASMID ANALYSIS:
+Present information in these sections ONLY if analyzing a specific plasmid and data is available:
 
 1. **Plasmid Overview**
    - Name
@@ -122,13 +127,28 @@ FORMAT YOUR RESPONSE using these sections (ONLY include sections that have actua
      * Position
      * Orientation
 
-3. **User-Inserted Sequences**
-   - Custom inserts and their details
-   - Position relative to other elements
+FORMAT FOR GENERAL QUESTIONS:
+1. Start with a direct answer to the question
+2. Provide relevant technical details and explanations
+3. Include practical considerations or tips when applicable
+4. Use bullet points or numbered lists for multiple points
+5. Use bold text (**text**) for important terms or concepts
 
-Use proper bold formatting (**text**) for section headers and feature names.
-Use bullet points for listing features and components.
-Keep descriptions concise and factual.
+FORMAT FOR STEP-BY-STEP GUIDANCE:
+When the user describes a goal for plasmid construction or genetic engineering:
+1. First briefly explain the overall approach and strategy
+2. Provide numbered steps (1., 2., 3.) that are specific, actionable, and in logical order
+3. For each step, include:
+   - The scientific rationale for the step
+   - Specific techniques, enzymes, or reagents to use
+   - Expected outcomes and how to verify success
+   - Potential pitfalls and troubleshooting tips when relevant
+4. Conclude with verification methods to ensure the final construct is correct
+5. When providing steps, use the format "Step X: [action]" to make steps clearly identifiable
+
+Always consider the user's specific context, the backbone they're working with, and their stated goals. Provide guidance that balances scientific rigor with practical laboratory considerations.
+
+When possible, connect general knowledge to the current plasmid (if data is available), but always answer the user's question fully.
 `;
 
 /**
@@ -310,10 +330,10 @@ export const getPlasmidDataForAI = (store) => {
 };
 
 /**
- * Get AI-generated analysis of the current plasmid in the editor
+ * Get AI-generated analysis of the current plasmid in the editor or answer general questions
  * @param {Object} store - Redux store containing editor state
- * @param {string} userQuery - User's query about the plasmid
- * @returns {Promise<string>} AI analysis of the plasmid
+ * @param {string} userQuery - User's query about the plasmid or general question
+ * @returns {Promise<string>} AI analysis or answer
  */
 export const analyzePlasmidWithAI = async (store, userQuery) => {
   try {
@@ -321,49 +341,43 @@ export const analyzePlasmidWithAI = async (store, userQuery) => {
       throw new Error('OpenAI API key is not configured. Please add your API key to the .env.local file.');
     }
 
-    // Get plasmid data in structured format
+    // Get plasmid data if available
     const plasmidData = getPlasmidDataForAI(store);
     
-    if (plasmidData.error) {
-      console.error('Error with plasmid data:', plasmidData.error);
-      return plasmidData.error;
-    }
+    // Prepare a proper message for the AI with or without plasmid data
+    let userContent = userQuery;
     
-    // If no sequence or no features, return a more helpful message
-    if (!plasmidData.size || plasmidData.size === 0) {
-      return "There is no sequence loaded in the editor. Please first load a plasmid or sequence using the search function or by selecting a plasmid backbone.";
-    }
-    
-    // If there are no features in the sequence, add this info to the prompt
-    let additionalInfo = "";
-    if (!plasmidData.features || plasmidData.features.length === 0) {
-      additionalInfo = "Note: This sequence doesn't have any annotated features.";
-    }
-    
-    console.log('Analyzing plasmid with AI:', plasmidData);
-    
-    const requestBody = {
-      model: MODEL,
-      messages: [
-        { role: 'system', content: PLASMID_ANALYSIS_PROMPT },
-        { 
-          role: 'user', 
-          content: `Here is the plasmid currently in the editor:
+    // If plasmid data is available and doesn't contain an error, include it
+    if (plasmidData && !plasmidData.error && plasmidData.size > 0) {
+      // If there are no features in the sequence, add this info to the prompt
+      let additionalInfo = "";
+      if (!plasmidData.features || plasmidData.features.length === 0) {
+        additionalInfo = "Note: This sequence doesn't have any annotated features.";
+      }
+      
+      userContent = `Here is the plasmid currently in the editor:
 ${JSON.stringify(plasmidData, null, 2)}
 
 ${additionalInfo}
 
-${userQuery}` 
-        }
+${userQuery}`;
+    }
+    
+    // Create the request with the unified prompt
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        { role: 'system', content: UNIFIED_PROMPT },
+        { role: 'user', content: userContent }
       ],
-      temperature: 0.3,
+      temperature: 0.5, // Balanced temperature for both analysis and general questions
       max_tokens: 1000,
       top_p: 1,
       frequency_penalty: 0,
       presence_penalty: 0
     };
     
-    console.log('Making OpenAI request for plasmid analysis');
+    console.log('Making OpenAI request');
     
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
@@ -397,8 +411,8 @@ ${userQuery}`
 
     return content;
   } catch (error) {
-    console.error('Error analyzing plasmid with AI:', error);
-    return `I'm having trouble analyzing the plasmid due to an error: ${error.message}. Please make sure there is a sequence loaded in the editor.`;
+    console.error('Error processing with AI:', error);
+    return `I'm having trouble processing your request due to an error: ${error.message}. Please try again or rephrase your question.`;
   }
 };
 

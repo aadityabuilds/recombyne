@@ -1,0 +1,294 @@
+.genbank-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.genbank-popup-container {
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  height: 80vh;
+  max-height: 800px;
+  background-color: #EBF1F5;
+  border-radius: 12px;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-in-out;
+  position: relative;
+  margin: 20px;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.genbank-popup-header {
+  padding: 15px;
+  background-color: #0F518A;
+  color: white;
+  text-align: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.genbank-popup-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: white;
+}
+
+.close-button {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: all 0.2s ease-in-out;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.genbank-messages-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 15px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #EBF1F5;
+  border-radius: 4px;
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.genbank-input-container {
+  display: flex;
+  padding: 15px;
+  background-color: #EBF1F5;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Reuse styles from ChatInterface.css for messages and other components */
+.message {
+  border-radius: 10px;
+  padding: 8px 12px;
+  max-width: 70%;
+  word-wrap: break-word;
+  position: relative;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.user-message {
+  align-self: flex-end;
+  background-color: #0F518A;
+  border: 1px solid #0a3e6c;
+  color: white;
+  margin-right: 15px;
+}
+
+.ai-message {
+  align-self: flex-start;
+  background-color: transparent;
+  border: none;
+  color: #000;
+  padding: 0;
+  max-width: 100%;
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
+.processing {
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.input-field-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.genbank-input-container input {
+  width: 100%;
+  padding: 12px 15px;
+  padding-right: 90px; /* Make room for the button */
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: white;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.genbank-input-container input:focus {
+  box-shadow: 0 1px 5px rgba(15, 81, 138, 0.2);
+}
+
+.send-button {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  background-color: #0F518A;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: #0a3e6c;
+}
+
+.send-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Sequence results styling */
+.sequence-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0 15px;
+}
+
+.sequence-results-container {
+  max-width: 100% !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 10px 0 !important;
+}
+
+.sequence-result-card {
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #f5f8fb;
+  border: 2px solid #B0D0E4;
+}
+
+.sequence-result-header {
+  background-color: #b0d0e4;
+  padding: 8px 12px;
+  text-align: right;
+}
+
+.see-detail-link {
+  color: #0F518A;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.see-detail-link:hover {
+  text-decoration: underline;
+}
+
+.sequence-result-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sequence-title {
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.sequence-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.sequence-details {
+  display: flex;
+  gap: 8px;
+}
+
+.sequence-size, .sequence-structure {
+  background-color: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.insert-button {
+  background-color: #2c8898;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.insert-button:hover:not(:disabled) {
+  background-color: #1e5f6b;
+}
+
+.error-message {
+  color: #d73a49;
+  font-weight: 500;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .genbank-popup-container {
+    width: 90%;
+    height: 90vh;
+  }
+} 

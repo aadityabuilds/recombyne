@@ -1,0 +1,53 @@
+/* SF Pro font definitions */
+@font-face {
+  font-family: 'SF Pro';
+  src: local('SF Pro Display'), local('SF Pro Text'), local('.SFNSText-Regular'),
+       local('.SFNSDisplay-Regular');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: local('SF Pro Display Bold'), local('SF Pro Text Bold'), local('.SFNSText-Bold'),
+       local('.SFNSDisplay-Bold');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: local('SF Pro Display Medium'), local('SF Pro Text Medium'), local('.SFNSText-Medium'),
+       local('.SFNSDisplay-Medium');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro';
+  src: local('SF Pro Display Semibold'), local('SF Pro Text Semibold'), local('.SFNSText-Semibold'),
+       local('.SFNSDisplay-Semibold');
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* Apply SF Pro to editor components */
+.ve-menu-bar,
+.ve-tool-container-holder,
+.ve-tool-container,
+.bp3-button,
+.ve-sequence-view,
+.ve-circular-view,
+.ve-row-item-sequence,
+.ve-row-item,
+.ve-row-item-sequence-feature,
+.ve-row-item-sequence-feature-text,
+.ve-row-view,
+.ve-label-text,
+.ve-monospace-font,
+.ve-find-tool,
+.ve-find-tool input,
+.ve-find-bar,
+.ve-find-options-container {
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+} 

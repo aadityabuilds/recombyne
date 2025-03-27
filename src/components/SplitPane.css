@@ -1,0 +1,95 @@
+.split-pane-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 44px); /* Subtract title bar (36px) and footer (8px) */
+  overflow: hidden;
+  position: relative;
+  padding: 10px;
+  gap: 10px;
+  background-color: white;
+  transition: padding 0.3s ease-in-out;
+  will-change: padding; /* Optimize for animation */
+}
+
+.split-pane-container.chat-collapsed {
+  padding-left: 0;
+}
+
+.split-pane-container.dragging {
+  transition: none !important; /* Force disable transitions while dragging */
+}
+
+.split-pane-container.dragging .split-pane-left,
+.split-pane-container.dragging .split-pane-right {
+  transition: none !important; /* Force disable transitions while dragging */
+}
+
+.split-pane-left {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: width 0.3s ease-in-out;
+  will-change: width; /* Optimize for width animation */
+  transform: translateZ(0); /* Hardware acceleration */
+}
+
+.split-pane-right {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: width 0.3s ease-in-out;
+  will-change: width; /* Optimize for width animation */
+  transform: translateZ(0); /* Hardware acceleration */
+}
+
+.split-pane-divider {
+  width: 6px;
+  height: 100%;
+  background-color: white;
+  cursor: col-resize;
+  z-index: 100;
+  position: relative;
+  flex-shrink: 0;
+  transition: opacity 0.3s ease-in-out;
+  will-change: opacity;
+  touch-action: none; /* Prevent scrolling when dragging on touch devices */
+}
+
+.split-pane-divider:hover,
+.split-pane-divider:active {
+  background-color: #DCDCDC;
+}
+
+.divider-grabber {
+  width: 4px;
+  height: 40px;
+  background-color: #999;
+  border-radius: 2px;
+}
+
+/* Apply when dragging */
+.split-pane-container.dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: col-resize;
+}
+
+.split-pane-container.dragging .split-pane-divider {
+  background-color: #DCDCDC;
+}
+
+/* Ensure the divider stays visible and has a larger hit area */
+.split-pane-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px; /* Increased hit area for easier grabbing */
+  right: -8px;
+  bottom: 0;
+  z-index: 101;
+  cursor: col-resize;
+} 

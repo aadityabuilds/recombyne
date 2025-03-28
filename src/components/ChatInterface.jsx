@@ -6,6 +6,7 @@ import TextShimmer from './TextShimmer';
 import { analyzePlasmidWithAI } from '../services/OpenAIService';
 import ReactMarkdown from 'react-markdown';
 import GenBankSearchPopup from './GenBankSearchPopup';
+import PlasmidSelectorModal from './PlasmidSelectorModal';
 
 // Utility function to debounce rapid operations
 const debounce = (func, wait = 300) => {
@@ -22,12 +23,13 @@ const debounce = (func, wait = 300) => {
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! I'm your AI copilot for plasmid sequence design. I can help with:\n\n- Analyzing plasmids\n- Answering molecular biology questions\n- Providing step-by-step guidance for your cloning goals\n\nJust tell me what you're working on, and I'll help you achieve your experimental goals!", sender: 'ai' }
+    { id: 1, text: "Hello! I'm your AI copilot for plasmid sequence design. I can help with:\n\n- Analyzing plasmids\n- Answering molecular biology questions\n- Providing step-by-step guidance for your cloning goals\n- Finding plasmid backbone sequences\n\nJust tell me what you're working on, and I'll help you achieve your experimental goals!", sender: 'ai' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isGenBankPopupOpen, setIsGenBankPopupOpen] = useState(false);
+  const [isPlasmidSelectorOpen, setIsPlasmidSelectorOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to the bottom of the message list
@@ -69,9 +71,43 @@ const ChatInterface = () => {
     setIsGenBankPopupOpen(false);
   };
 
+  // Function to close plasmid selector modal
+  const closePlasmidSelector = () => {
+    setIsPlasmidSelectorOpen(false);
+  };
+
+  // Check if query is related to plasmid backbones
+  const isBackboneQuery = (query) => {
+    const backboneKeywords = [
+      'backbone', 'vector', 'plasmid template', 'expression vector',
+      'cloning vector', 'show me backbones', 'select backbone', 'choose backbone',
+      'list of backbones', 'plasmid options', 'available plasmids'
+    ];
+    
+    const lowerQuery = query.toLowerCase();
+    return backboneKeywords.some(keyword => lowerQuery.includes(keyword.toLowerCase()));
+  };
+
   // Process general questions and plasmid analysis
   const processGeneralQuestion = async (query) => {
     try {
+      // Check if this is a backbone-related query
+      if (isBackboneQuery(query)) {
+        // Show the plasmid selector modal
+        setIsPlasmidSelectorOpen(true);
+        
+        // Give a response about opening the backbone selector
+        const backboneResponse = {
+          id: Date.now() + 2,
+          text: "I've opened the plasmid backbone selector for you. You can browse and select from common plasmid backbones organized by their primary use case. Click on any plasmid to load it into the editor.",
+          sender: 'ai'
+        };
+        
+        setMessages(prev => [...prev, backboneResponse]);
+        return true;
+      }
+      
+      // Otherwise, process as a general question
       // Get AI response, passing the entire message history for context
       const response = await analyzePlasmidWithAI(store, query, messages);
       
@@ -247,6 +283,12 @@ const ChatInterface = () => {
         isOpen={isGenBankPopupOpen} 
         onClose={closeGenBankSearchPopup} 
       />
+      {isPlasmidSelectorOpen && (
+        <PlasmidSelectorModal 
+          isOpen={isPlasmidSelectorOpen} 
+          onClose={closePlasmidSelector} 
+        />
+      )}
     </>
   );
 };

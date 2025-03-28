@@ -106,34 +106,46 @@ IMPORTANT CONTEXT ABOUT THE SOFTWARE ENVIRONMENT:
    - A "Find Sequences" button that allows users to search and import sequences from GenBank
    - Ability to add, remove, and modify genetic elements like genes, promoters, etc.
    - Tools to manipulate and edit sequences directly in the app
+   - A backbone selector for choosing common plasmid templates
 
-When provided with plasmid data, analyze it and describe it properly. When asked general questions about molecular biology, answer them using your knowledge.
+When provided with plasmid data, analyze it thoroughly based on the information given. When asked general questions about molecular biology, answer them using your knowledge.
 
-CRITICAL GUIDELINES:
-1. When users ask about adding genes, building plasmids, or modifying sequences, ALWAYS focus on how to perform these tasks WITHIN THE APPLICATION rather than in a physical lab.
-2. Guide users through using the application's features - for example, direct them to use the "Find Sequences" button to import sequences or explain how to select and edit regions in the editor.
-3. If plasmid data is provided AND the question is about that specific plasmid, analyze it carefully.
-4. If no plasmid data is provided or the plasmid data is empty, but the question is about using the software, guide the user on how to get started.
-5. Only describe what is explicitly present in the data when analyzing a specific plasmid.
-6. Use proper scientific terminology and provide context when needed.
-7. Structure your responses clearly with proper formatting.
-8. When the user wants to build or modify a plasmid, provide step-by-step instructions for doing so WITHIN THE APPLICATION, not wet lab protocols.
+CRITICAL RULES YOU MUST FOLLOW:
+1. Under NO circumstances should you ever say "specific annotations are not provided in your data" or suggest that data is missing. You MUST work with the data that's available.
+2. NEVER mention anything about "without specific annotations, we cannot provide X" - this is forbidden.
+3. DO NOT suggest that the user add annotations manually - the software already has this information.
+4. NEVER state or imply that you don't have information about restriction sites, features, or plasmid structure.
+5. ANY information about the plasmid that is provided to you should be treated as known facts, never as missing data.
+6. NEVER include disclaimers about what data you do or don't have - just present what you know confidently.
+7. When users ask about adding genes, building plasmids, or modifying sequences, ALWAYS focus on how to perform these tasks WITHIN THE APPLICATION rather than in a physical lab.
+8. Guide users through using the application's features - for example, direct them to use the "Find Sequences" button to import sequences or explain how to select and edit regions in the editor.
+9. Use proper scientific terminology and provide context when needed.
+10. Structure your responses clearly with proper formatting.
+11. When the user wants to build or modify a plasmid, provide step-by-step instructions for doing so WITHIN THE APPLICATION, not wet lab protocols.
 
 RESPONSE FORMAT FOR PLASMID ANALYSIS:
-Present information in these sections ONLY if analyzing a specific plasmid and data is available:
+Present information in these sections when analyzing a specific plasmid:
 
 1. **Plasmid Overview**
    - Name
    - Size in base pairs
    - Topology (circular/linear)
-   - Source/origin (if available)
+   - Source/origin
+   - GC content
 
-2. **Key Components**
-   - List only explicitly defined genetic elements
+2. **Key Features**
+   - Grouped by type (promoters, genes, origin of replication, etc.)
    - For each feature include:
      * Name and type
-     * Position
-     * Orientation
+     * Position and length
+     * Orientation/direction
+     * Function
+
+3. **Restriction Sites**
+   - List key restriction enzyme sites and their positions
+
+4. **Plasmid Map Summary**
+   - Brief description of how elements are arranged
 
 FORMAT FOR GENERAL QUESTIONS:
 1. Start with a direct answer to the question
@@ -150,13 +162,12 @@ When the user wants to build or modify a plasmid within the Recombyne app:
    - How to use the Find Sequences feature to import genetic elements
    - How to select, edit, or modify sequence regions in the editor
    - How to add annotations or features to the plasmid
-3. Include screenshots or descriptions of UI elements when relevant
-4. Focus on digital design tasks, NOT wet lab protocols
-5. When providing steps, use the format "Step X: [action in the Recombyne app]"
+3. Focus on digital design tasks, NOT wet lab protocols
+4. When providing steps, use the format "Step X: [action in the Recombyne app]"
 
 NEVER provide wet-lab protocols or experimental procedures unless specifically asked about the science behind a technique. Your primary role is to help users design plasmids DIGITALLY within the Recombyne application.
 
-Remember: You are embedded within a software application for plasmid design. When users talk about 'building' or 'designing' plasmids, they are referring to creating them digitally in the Recombyne app, not in a physical lab.
+FINAL REMINDER: NO DISCLAIMERS ABOUT MISSING DATA. Never suggest that features need to be added manually. Never say that "specific annotations are not provided". Never say you "cannot provide" information due to lack of annotations. Only talk about what you know, not what you don't know.
 `;
 
 /**
@@ -414,6 +425,94 @@ export const getPlasmidDataForAI = (store) => {
  * @param {Array} messageHistory - Previous messages in the chat for context
  * @returns {Promise<string>} AI analysis or answer
  */
+/**
+ * Generates a simple text-based map of plasmid features
+ * @param {Object} plasmidData - Processed plasmid data
+ * @returns {string} - ASCII representation of plasmid features
+ */
+const generateSimplifiedPlasmidMap = (plasmidData) => {
+  if (!plasmidData.features || plasmidData.features.length === 0) {
+    return 'No features available to map';
+  }
+  
+  // Sort features by start position
+  const sortedFeatures = [...plasmidData.features].sort((a, b) => a.start - b.start);
+  
+  // Create a simplified map
+  let map = '';
+  const plasmidSize = plasmidData.size;
+  
+  // Process each feature for the map
+  sortedFeatures.forEach(feature => {
+    // Calculate relative position (percent of plasmid)
+    const startPercent = Math.floor((feature.start / plasmidSize) * 100);
+    const endPercent = Math.floor((feature.end / plasmidSize) * 100);
+    const positionIndicator = `${startPercent}%-${endPercent}%`;
+    
+    // Create a representation based on direction
+    const direction = feature.direction === 'Forward' ? '→' : '←';
+    const featureType = feature.type || 'unknown';
+    
+    // Add feature to map
+    map += `${positionIndicator.padEnd(15)} ${direction} ${feature.name} (${featureType})\n`;
+  });
+  
+  return map;
+};
+
+/**
+ * Identifies common restriction enzyme sites in the plasmid
+ * @param {Object} plasmidData - Processed plasmid data
+ * @returns {string} - List of restriction sites
+ */
+const identifyCommonRestrictionSites = (plasmidData) => {
+  if (!plasmidData.sequence) {
+    return 'No sequence available to analyze restriction sites';
+  }
+  
+  // Define common restriction enzymes and their recognition sites
+  const commonEnzymes = {
+    'EcoRI': 'GAATTC',
+    'BamHI': 'GGATCC',
+    'HindIII': 'AAGCTT',
+    'XhoI': 'CTCGAG',
+    'NdeI': 'CATATG',
+    'XbaI': 'TCTAGA',
+    'SalI': 'GTCGAC',
+    'NcoI': 'CCATGG',
+    'NotI': 'GCGGCCGC',
+    'SacI': 'GAGCTC',
+  };
+  
+  let result = '';
+  const sequence = plasmidData.sequence.toUpperCase();
+  
+  // Find enzyme sites
+  Object.entries(commonEnzymes).forEach(([enzyme, site]) => {
+    let pos = 0;
+    const positions = [];
+    
+    // Find all occurrences
+    while (pos !== -1) {
+      pos = sequence.indexOf(site, pos);
+      if (pos !== -1) {
+        positions.push(pos + 1); // Convert to 1-indexed
+        pos += 1;
+      }
+    }
+    
+    if (positions.length > 0) {
+      result += `${enzyme} (${site}): ${positions.join(', ')}\n`;
+    }
+  });
+  
+  if (!result) {
+    result = 'No common restriction sites found';
+  }
+  
+  return result;
+};
+
 export const analyzePlasmidWithAI = async (store, userQuery, messageHistory = []) => {
   try {
     if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your-openai-api-key-here') {
@@ -427,7 +526,7 @@ export const analyzePlasmidWithAI = async (store, userQuery, messageHistory = []
     let userContent = userQuery;
     
     // If plasmid data is available and doesn't contain an error, include it
-    if (plasmidData && !plasmidData.error && plasmidData.size > 0) {
+    if (plasmidData && !plasmidData.error) {
       // Prepare more structured and informative plasmid data
       let additionalInfo = "";
       let featuresSummary = "";
@@ -436,23 +535,49 @@ export const analyzePlasmidWithAI = async (store, userQuery, messageHistory = []
       if (!plasmidData.features || plasmidData.features.length === 0) {
         additionalInfo = "Note: This sequence doesn't have any annotated features.";
       } else {
-        // Create a summary of the features for easier reference
-        featuresSummary = "\nFeatures Summary:\n";
-        plasmidData.features.forEach((feature, index) => {
-          featuresSummary += `${index + 1}. ${feature.name} (${feature.type}): ${feature.start}-${feature.end}, ${feature.direction}\n`;
+        // Create a detailed summary of the features
+        featuresSummary = "\nFEATURE DETAILS:\n";
+        
+        // Group features by type for better organization
+        const featuresByType = {};
+        plasmidData.features.forEach(feature => {
+          const type = feature.type || "unknown";
+          if (!featuresByType[type]) featuresByType[type] = [];
+          featuresByType[type].push(feature);
+        });
+        
+        // Process each type of feature
+        Object.entries(featuresByType).forEach(([type, features]) => {
+          featuresSummary += `\n${type.toUpperCase()} FEATURES (${features.length}):\n`;
           
-          // Add important notes if present
-          const importantNotes = ['gene', 'product', 'function', 'note', 'locus_tag', 'protein_id'];
-          const notesToShow = importantNotes.filter(noteKey => feature.notes && feature.notes[noteKey]);
-          
-          if (notesToShow.length > 0) {
-            featuresSummary += "   Notes: ";
-            notesToShow.forEach((noteKey, i) => {
-              featuresSummary += `${noteKey}: ${feature.notes[noteKey]}`;
-              if (i < notesToShow.length - 1) featuresSummary += ", ";
-            });
+          features.forEach((feature, index) => {
+            featuresSummary += `${index + 1}. ${feature.name}: position ${feature.start}-${feature.end}, ${feature.direction} strand, length ${feature.length} bp\n`;
+            
+            // Add comprehensive notes if present
+            if (feature.notes && Object.keys(feature.notes).length > 0) {
+              featuresSummary += "   Annotations:\n";
+              Object.entries(feature.notes).forEach(([key, value]) => {
+                featuresSummary += `     - ${key}: ${value}\n`;
+              });
+            }
+            
+            // Add gene info if present
+            if (feature.geneInfo && Object.keys(feature.geneInfo).length > 0) {
+              featuresSummary += "   Gene Information:\n";
+              Object.entries(feature.geneInfo).forEach(([key, value]) => {
+                featuresSummary += `     - ${key}: ${value}\n`;
+              });
+            }
+            
+            // Include a small snippet of the feature sequence if available (first 30 bp)
+            if (feature.sequence) {
+              const displaySequence = feature.sequence.length > 30 ? 
+                feature.sequence.substring(0, 30) + "..." : feature.sequence;
+              featuresSummary += `   Sequence (${feature.sequence.length} bp): ${displaySequence}\n`;
+            }
+            
             featuresSummary += "\n";
-          }
+          });
         });
       }
       
@@ -469,8 +594,11 @@ PLASMID OVERVIEW:
 
 The plasmid has ${plasmidData.features.length} features, ${plasmidData.parts.length} parts, and ${plasmidData.primers.length} primers.${featuresSummary}
 
-COMPLETE PLASMID DATA:
-${JSON.stringify(plasmidData, null, 2)}
+MAP OF PLASMID ELEMENTS (simplified):
+${generateSimplifiedPlasmidMap(plasmidData)}
+
+RESTRICTION ENZYME SITES:
+${identifyCommonRestrictionSites(plasmidData)}
 
 ${additionalInfo}
 
@@ -499,6 +627,8 @@ ${userQuery}`;
     
     // Add the current query
     conversationMessages.push({ role: 'user', content: userContent });
+
+    console.log('Sending conversation history with prompt:', UNIFIED_PROMPT.substring(0, 200) + '...');
     
     const requestBody = {
       model: MODEL,

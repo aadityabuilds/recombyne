@@ -96,20 +96,28 @@ Remember:
 
 // Unified system prompt for both plasmid analysis and general questions
 const UNIFIED_PROMPT = `
-You are an expert molecular biologist and synthetic biology specialist with deep knowledge of plasmids, cloning, and genetic engineering.
-You are assisting a user with plasmid design, analysis, and answering questions about molecular biology.
+You are an AI copilot embedded within the Recombyne plasmid editor web application. Your primary role is to assist users with designing, modifying, and analyzing plasmids DIRECTLY IN THE SOFTWARE, not in a physical lab.
 
-When provided with plasmid data, analyze it and describe it properly. When asked general questions about molecular biology, answer them using your knowledge without requiring plasmid data.
+IMPORTANT CONTEXT ABOUT THE SOFTWARE ENVIRONMENT:
+1. You are part of a web-based plasmid editor application called Recombyne.
+2. Users can design, modify, and analyze DNA sequences entirely within this digital environment.
+3. The application has several key features:
+   - A DNA sequence editor that can show both circular and linear views of plasmids
+   - A "Find Sequences" button that allows users to search and import sequences from GenBank
+   - Ability to add, remove, and modify genetic elements like genes, promoters, etc.
+   - Tools to manipulate and edit sequences directly in the app
 
-IMPORTANT GUIDELINES:
-1. MOST IMPORTANT: If the user asks a general question about molecular biology or plasmids, you MUST answer it regardless of whether there is plasmid data currently loaded in the editor.
-2. If plasmid data is provided AND the question is about that specific plasmid, analyze it carefully.
-3. If no plasmid data is provided or the plasmid data is empty, but the question is general, answer it using your knowledge.
-4. Only describe what is explicitly present in the data when analyzing a specific plasmid.
-5. Use proper scientific terminology and provide context when needed.
-6. Structure your responses clearly with proper formatting.
-7. For general questions, provide accurate, scientifically sound information with practical considerations when applicable.
-8. When the user describes their experimental goals or intentions with a plasmid backbone, provide detailed, actionable step-by-step guidance to help them achieve their goal.
+When provided with plasmid data, analyze it and describe it properly. When asked general questions about molecular biology, answer them using your knowledge.
+
+CRITICAL GUIDELINES:
+1. When users ask about adding genes, building plasmids, or modifying sequences, ALWAYS focus on how to perform these tasks WITHIN THE APPLICATION rather than in a physical lab.
+2. Guide users through using the application's features - for example, direct them to use the "Find Sequences" button to import sequences or explain how to select and edit regions in the editor.
+3. If plasmid data is provided AND the question is about that specific plasmid, analyze it carefully.
+4. If no plasmid data is provided or the plasmid data is empty, but the question is about using the software, guide the user on how to get started.
+5. Only describe what is explicitly present in the data when analyzing a specific plasmid.
+6. Use proper scientific terminology and provide context when needed.
+7. Structure your responses clearly with proper formatting.
+8. When the user wants to build or modify a plasmid, provide step-by-step instructions for doing so WITHIN THE APPLICATION, not wet lab protocols.
 
 RESPONSE FORMAT FOR PLASMID ANALYSIS:
 Present information in these sections ONLY if analyzing a specific plasmid and data is available:
@@ -134,21 +142,21 @@ FORMAT FOR GENERAL QUESTIONS:
 4. Use bullet points or numbered lists for multiple points
 5. Use bold text (**text**) for important terms or concepts
 
-FORMAT FOR STEP-BY-STEP GUIDANCE:
-When the user describes a goal for plasmid construction or genetic engineering:
-1. First briefly explain the overall approach and strategy
-2. Provide numbered steps (1., 2., 3.) that are specific, actionable, and in logical order
-3. For each step, include:
-   - The scientific rationale for the step
-   - Specific techniques, enzymes, or reagents to use
-   - Expected outcomes and how to verify success
-   - Potential pitfalls and troubleshooting tips when relevant
-4. Conclude with verification methods to ensure the final construct is correct
-5. When providing steps, use the format "Step X: [action]" to make steps clearly identifiable
+FORMAT FOR IN-APP DESIGN GUIDANCE:
+When the user wants to build or modify a plasmid within the Recombyne app:
+1. First briefly explain what can be achieved within the application
+2. Provide numbered steps that focus EXCLUSIVELY on using the application's features:
+   - Which buttons/tools to click in the interface
+   - How to use the Find Sequences feature to import genetic elements
+   - How to select, edit, or modify sequence regions in the editor
+   - How to add annotations or features to the plasmid
+3. Include screenshots or descriptions of UI elements when relevant
+4. Focus on digital design tasks, NOT wet lab protocols
+5. When providing steps, use the format "Step X: [action in the Recombyne app]"
 
-Always consider the user's specific context, the backbone they're working with, and their stated goals. Provide guidance that balances scientific rigor with practical laboratory considerations.
+NEVER provide wet-lab protocols or experimental procedures unless specifically asked about the science behind a technique. Your primary role is to help users design plasmids DIGITALLY within the Recombyne application.
 
-When possible, connect general knowledge to the current plasmid (if data is available), but always answer the user's question fully.
+Remember: You are embedded within a software application for plasmid design. When users talk about 'building' or 'designing' plasmids, they are referring to creating them digitally in the Recombyne app, not in a physical lab.
 `;
 
 /**
@@ -294,31 +302,101 @@ export const getPlasmidDataForAI = (store) => {
     console.log('Features count:', sequenceData.features ? sequenceData.features.length : 'No features');
     console.log('Parts count:', sequenceData.parts ? sequenceData.parts.length : 'No parts');
     
-    // Create a structured representation of the plasmid for AI consumption
-    return {
-      name: sequenceData.name || "Unnamed Plasmid",
-      size: sequenceData.sequence ? sequenceData.sequence.length : 0,
-      circular: sequenceData.circular === true ? "Circular" : "Linear",
-      features: Array.isArray(sequenceData.features) ? sequenceData.features.map(feature => ({
+    // Extract sequence if available for analysis
+    const sequence = sequenceData.sequence || '';
+    
+    // Calculate basic sequence properties
+    let gcContent = 0;
+    if (sequence) {
+      const gcCount = (sequence.match(/[GC]/gi) || []).length;
+      gcContent = sequence.length > 0 ? (gcCount / sequence.length * 100).toFixed(1) : 0;
+    }
+    
+    // Enhanced processing of feature properties
+    const processedFeatures = Array.isArray(sequenceData.features) ? sequenceData.features.map(feature => {
+      // Extract all note properties and format them better
+      const notes = {};
+      if (feature.notes) {
+        Object.entries(feature.notes).forEach(([key, value]) => {
+          // Format the note value properly - it's often an array
+          if (Array.isArray(value)) {
+            notes[key] = value.join(', ');
+          } else if (value !== undefined && value !== null) {
+            notes[key] = String(value);
+          }
+        });
+      }
+      
+      // Extract sequences for the feature if possible
+      let featureSequence = '';
+      if (sequence && typeof feature.start === 'number' && typeof feature.end === 'number') {
+        // Extract the actual sequence of this feature
+        featureSequence = sequence.substring(feature.start, feature.end + 1);
+        // If reverse complement, we'd need to reverse complement the sequence
+        if (!feature.forward) {
+          // Simple reverse complement implementation
+          featureSequence = featureSequence
+            .split('')
+            .reverse()
+            .map(base => {
+              switch(base.toUpperCase()) {
+                case 'A': return 'T';
+                case 'T': return 'A';
+                case 'G': return 'C';
+                case 'C': return 'G';
+                default: return base;
+              }
+            })
+            .join('');
+        }
+      }
+      
+      // For gene features, extract important properties like gene name, product, etc.
+      let geneInfo = {};
+      if (feature.type === 'CDS' || feature.type === 'gene') {
+        if (notes.gene) geneInfo.gene = notes.gene;
+        if (notes.product) geneInfo.product = notes.product;
+        if (notes.translation) geneInfo.proteinLength = notes.translation.length;
+        if (notes.codon_start) geneInfo.codonStart = notes.codon_start;
+      }
+      
+      return {
         name: feature.name || "Unnamed feature",
         type: feature.type || "unknown",
         start: (typeof feature.start === 'number' ? feature.start : 0) + 1, // Convert to 1-indexed for readability
         end: (typeof feature.end === 'number' ? feature.end : 0) + 1,     // Convert to 1-indexed for readability
         direction: feature.forward ? "Forward" : "Reverse",
-        notes: feature.notes || {}
-      })) : [],
+        length: (typeof feature.end === 'number' && typeof feature.start === 'number') ? 
+                (feature.end - feature.start + 1) : 0,
+        notes: notes,
+        geneInfo: Object.keys(geneInfo).length > 0 ? geneInfo : undefined,
+        sequence: featureSequence || undefined
+      };
+    }) : [];
+    
+    // Create a structured representation of the plasmid for AI consumption
+    return {
+      name: sequenceData.name || "Unnamed Plasmid",
+      size: sequence.length,
+      circular: sequenceData.circular === true ? "Circular" : "Linear",
+      gcContent: `${gcContent}%`,
+      features: processedFeatures,
       parts: Array.isArray(sequenceData.parts) ? sequenceData.parts.map(part => ({
         name: part.name || "Unnamed part",
         type: part.type || "unknown",
         start: (typeof part.start === 'number' ? part.start : 0) + 1,
         end: (typeof part.end === 'number' ? part.end : 0) + 1,
-        direction: part.forward ? "Forward" : "Reverse"
+        direction: part.forward ? "Forward" : "Reverse",
+        length: (typeof part.end === 'number' && typeof part.start === 'number') ? 
+                (part.end - part.start + 1) : 0,
       })) : [],
       primers: Array.isArray(sequenceData.primers) ? sequenceData.primers.map(primer => ({
         name: primer.name || "Unnamed primer",
         start: (typeof primer.start === 'number' ? primer.start : 0) + 1,
         end: (typeof primer.end === 'number' ? primer.end : 0) + 1,
-        direction: primer.forward ? "Forward" : "Reverse"
+        direction: primer.forward ? "Forward" : "Reverse",
+        length: (typeof primer.end === 'number' && typeof primer.start === 'number') ? 
+                (primer.end - primer.start + 1) : 0,
       })) : [],
       description: sequenceData.description || "",
       source: sequenceData.source || ""
@@ -333,9 +411,10 @@ export const getPlasmidDataForAI = (store) => {
  * Get AI-generated analysis of the current plasmid in the editor or answer general questions
  * @param {Object} store - Redux store containing editor state
  * @param {string} userQuery - User's query about the plasmid or general question
+ * @param {Array} messageHistory - Previous messages in the chat for context
  * @returns {Promise<string>} AI analysis or answer
  */
-export const analyzePlasmidWithAI = async (store, userQuery) => {
+export const analyzePlasmidWithAI = async (store, userQuery, messageHistory = []) => {
   try {
     if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your-openai-api-key-here') {
       throw new Error('OpenAI API key is not configured. Please add your API key to the .env.local file.');
@@ -349,13 +428,48 @@ export const analyzePlasmidWithAI = async (store, userQuery) => {
     
     // If plasmid data is available and doesn't contain an error, include it
     if (plasmidData && !plasmidData.error && plasmidData.size > 0) {
-      // If there are no features in the sequence, add this info to the prompt
+      // Prepare more structured and informative plasmid data
       let additionalInfo = "";
+      let featuresSummary = "";
+      
+      // Check for features
       if (!plasmidData.features || plasmidData.features.length === 0) {
         additionalInfo = "Note: This sequence doesn't have any annotated features.";
+      } else {
+        // Create a summary of the features for easier reference
+        featuresSummary = "\nFeatures Summary:\n";
+        plasmidData.features.forEach((feature, index) => {
+          featuresSummary += `${index + 1}. ${feature.name} (${feature.type}): ${feature.start}-${feature.end}, ${feature.direction}\n`;
+          
+          // Add important notes if present
+          const importantNotes = ['gene', 'product', 'function', 'note', 'locus_tag', 'protein_id'];
+          const notesToShow = importantNotes.filter(noteKey => feature.notes && feature.notes[noteKey]);
+          
+          if (notesToShow.length > 0) {
+            featuresSummary += "   Notes: ";
+            notesToShow.forEach((noteKey, i) => {
+              featuresSummary += `${noteKey}: ${feature.notes[noteKey]}`;
+              if (i < notesToShow.length - 1) featuresSummary += ", ";
+            });
+            featuresSummary += "\n";
+          }
+        });
       }
       
-      userContent = `Here is the plasmid currently in the editor:
+      // Build a more structured prompt with better organization of the data
+      userContent = `Here is the plasmid currently loaded in the Recombyne editor:
+
+PLASMID OVERVIEW:
+- Name: ${plasmidData.name}
+- Size: ${plasmidData.size} bp
+- Topology: ${plasmidData.circular}
+- GC Content: ${plasmidData.gcContent}
+- Description: ${plasmidData.description || 'None provided'}
+- Source: ${plasmidData.source || 'Unknown'}
+
+The plasmid has ${plasmidData.features.length} features, ${plasmidData.parts.length} parts, and ${plasmidData.primers.length} primers.${featuresSummary}
+
+COMPLETE PLASMID DATA:
 ${JSON.stringify(plasmidData, null, 2)}
 
 ${additionalInfo}
@@ -363,13 +477,32 @@ ${additionalInfo}
 ${userQuery}`;
     }
     
-    // Create the request with the unified prompt
+    // Create the request with the unified prompt and message history
+    // Prepare conversation history for the API request
+    const conversationMessages = [
+      { role: 'system', content: UNIFIED_PROMPT }
+    ];
+    
+    // Add previous messages to provide context
+    if (messageHistory && messageHistory.length > 0) {
+      // Skip the first AI message (welcome message) to save tokens
+      const relevantHistory = messageHistory.slice(1);
+      
+      // Add each message from the history
+      relevantHistory.forEach(msg => {
+        conversationMessages.push({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        });
+      });
+    }
+    
+    // Add the current query
+    conversationMessages.push({ role: 'user', content: userContent });
+    
     const requestBody = {
       model: MODEL,
-      messages: [
-        { role: 'system', content: UNIFIED_PROMPT },
-        { role: 'user', content: userContent }
-      ],
+      messages: conversationMessages,
       temperature: 0.5, // Balanced temperature for both analysis and general questions
       max_tokens: 1000,
       top_p: 1,

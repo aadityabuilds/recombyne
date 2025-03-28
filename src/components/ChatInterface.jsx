@@ -72,8 +72,8 @@ const ChatInterface = () => {
   // Process general questions and plasmid analysis
   const processGeneralQuestion = async (query) => {
     try {
-      // Get AI response 
-      const response = await analyzePlasmidWithAI(store, query);
+      // Get AI response, passing the entire message history for context
+      const response = await analyzePlasmidWithAI(store, query, messages);
       
       // Create response message
       const responseMessage = {

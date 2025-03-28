@@ -120,10 +120,28 @@ const SplitPane = ({ left, right }) => {
       }
     };
 
-    // Use a better approach than MutationObserver for performance
-    // Listen to a custom event emitted when chat is toggled
-    const handleChatToggle = () => {
-      checkChatCollapsed();
+    // Listen for direct chat-toggled event
+    const handleChatToggle = (event) => {
+      // Extract the collapsed state from the event detail
+      const isCollapsed = event.detail?.isCollapsed;
+      
+      // If we have explicit state from the event, use it
+      if (typeof isCollapsed === 'boolean') {
+        setIsChatCollapsed(isCollapsed);
+        
+        // When expanding, restore the last valid position
+        if (!isCollapsed && isChatCollapsed) {
+          setSplitPosition(lastValidSplitPosition.current);
+        }
+        
+        // When collapsing, save the current position and force editor to expand
+        if (isCollapsed && !isChatCollapsed) {
+          lastValidSplitPosition.current = splitPosition;
+        }
+      } else {
+        // Fallback to checking the DOM if event doesn't have explicit state
+        checkChatCollapsed();
+      }
     };
     
     window.addEventListener('chat-toggled', handleChatToggle);
@@ -145,7 +163,11 @@ const SplitPane = ({ left, right }) => {
         className="split-pane-left"
         style={{ 
           width: isChatCollapsed ? '0%' : `${splitPosition}%`,
-          transition: isDragging ? 'none' : undefined
+          transition: isDragging ? 'none' : 'width 0.3s ease-in-out',
+          overflow: 'hidden',
+          flexShrink: isChatCollapsed ? 1 : 0,
+          flexGrow: 0,
+          opacity: isChatCollapsed ? 0 : 1
         }}
       >
         {left}
@@ -154,14 +176,19 @@ const SplitPane = ({ left, right }) => {
       <div 
         className="split-pane-divider"
         ref={dividerRef}
-        style={{ display: isChatCollapsed ? 'none' : 'block' }}
+        style={{ 
+          display: isChatCollapsed ? 'none' : 'block',
+          width: isChatCollapsed ? '0px' : '6px'
+        }}
       />
       
       <div 
         className="split-pane-right"
         style={{ 
-          width: isChatCollapsed ? '100%' : `calc(100% - ${splitPosition}% - 1px)`,
-          transition: isDragging ? 'none' : undefined
+          width: isChatCollapsed ? '100%' : `calc(100% - ${splitPosition}% - 6px)`,
+          transition: isDragging ? 'none' : 'width 0.3s ease-in-out',
+          flexGrow: 1,
+          flexShrink: 0
         }}
       >
         {right}

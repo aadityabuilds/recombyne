@@ -16,14 +16,7 @@ function App() {
     setIsLoading(false);
   };
 
-  // Show the plasmid selector when the app first loads
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowPlasmidSelector(true);
-    }, 500); // Short delay to ensure app is fully rendered
-    
-    return () => clearTimeout(timer);
-  }, []);
+  // Plasmid selector can be triggered manually instead of on app load
 
   // Hide the shortcut tooltip after 5 seconds
   useEffect(() => {

@@ -233,3 +233,44 @@
   color: #d32f2f;
   border-radius: 4px;
 }
+
+/* Add style for the optimization error */
+.optimization-error {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 4px;
+  background-color: #fff0f0;
+  border: 1px solid #ffcfcf;
+  color: #cc0000;
+}
+
+.optimization-error h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+.optimization-error p {
+  margin-bottom: 8px;
+}
+
+.error-help {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.error-help ul {
+  margin-top: 4px;
+  padding-left: 20px;
+}
+
+/* Add style for selection warning */
+.selection-warning {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  font-size: 0.85em;
+}

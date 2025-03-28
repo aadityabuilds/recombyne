@@ -12,6 +12,7 @@ function SequenceOptimizerModal({ isOpen, onClose, sequence, onOptimizeComplete 
   const [isLoading, setIsLoading] = useState(false);
   const [optimizationError, setOptimizationError] = useState(null);
   const [isCircular, setIsCircular] = useState(false);
+  const [selectionWarning, setSelectionWarning] = useState(null);
   
   // Constraints state with parameters aligned with DNAChisel API requirements
   const [constraints, setConstraints] = useState([
@@ -38,11 +39,32 @@ function SequenceOptimizerModal({ isOpen, onClose, sequence, onOptimizeComplete 
     end: sequence ? sequence.length : 0 
   });
 
+  // Validate selection when CodonOptimize is enabled
+  const validateSelection = () => {
+    // Check if CodonOptimize is enabled
+    const codonOptimizeEnabled = objectives.some(o => o.type === 'CodonOptimize' && o.enabled);
+    
+    if (codonOptimizeEnabled) {
+      const length = selectedRegion.end - selectedRegion.start;
+      if (length % 3 !== 0) {
+        setSelectionWarning(
+          `Warning: For codon optimization, the selected region length (${length} bp) should be divisible by 3. ` +
+          `The optimization will adjust the selection automatically.`
+        );
+      } else {
+        setSelectionWarning(null);
+      }
+    } else {
+      setSelectionWarning(null);
+    }
+  };
+
   useEffect(() => {
     // Reset state when modal is opened
     if (isOpen) {
       setOptimizationError(null);
       setIsLoading(false);
+      setSelectionWarning(null);
       
       // Reset selected region when sequence changes
       if (sequence) {
@@ -51,11 +73,19 @@ function SequenceOptimizerModal({ isOpen, onClose, sequence, onOptimizeComplete 
     }
   }, [isOpen, sequence]);
 
+  // Validate selection when region or objectives change
+  useEffect(() => {
+    validateSelection();
+  }, [selectedRegion, objectives]);
+
   // Toggle constraint on/off
   const toggleConstraint = (index) => {
-    const updatedConstraints = [...constraints];
-    updatedConstraints[index].enabled = !updatedConstraints[index].enabled;
-    setConstraints(updatedConstraints);
+    const newConstraints = [...constraints];
+    newConstraints[index] = {
+      ...newConstraints[index],
+      enabled: !newConstraints[index].enabled
+    };
+    setConstraints(newConstraints);
   };
 
   // Update constraint parameter
@@ -131,6 +161,7 @@ function SequenceOptimizerModal({ isOpen, onClose, sequence, onOptimizeComplete 
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.details || errorMessage;
+          console.error('Error details:', errorData);
         } catch (parseError) {
           // If we can't parse the error response as JSON, use the status text
           errorMessage = `${errorMessage}: ${response.statusText}`;
@@ -138,22 +169,17 @@ function SequenceOptimizerModal({ isOpen, onClose, sequence, onOptimizeComplete 
         throw new Error(errorMessage);
       }
       
-      // Get the response text first to validate it's not empty
-      const responseText = await response.text();
-      console.log('Response length:', responseText.length);
-      
-      if (!responseText.trim()) {
-        throw new Error('Server returned an empty response');
-      }
-      
-      // Try to parse the response as JSON
+      // Parse the JSON response directly
       let result;
       try {
-        result = JSON.parse(responseText);
+        result = await response.json();
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        console.error('Response text:', responseText.substring(0, 200) + '...');
         throw new Error(`Failed to parse server response: ${parseError.message}`);
+      }
+      
+      if (!result) {
+        throw new Error('Server returned an empty or invalid response');
       }
       
       if (result.success) {
@@ -213,6 +239,27 @@ Sequence length: ${result.optimized_sequence.length} bp`;
     }
   };
 
+  // Render the error message
+  const renderError = () => {
+    if (!optimizationError) return null;
+    
+    return (
+      <div className="optimization-error">
+        <h4>Optimization Error</h4>
+        <p>{optimizationError}</p>
+        <p className="error-help">
+          If this problem persists, try the following:
+          <ul>
+            <li>Check that the server is running</li>
+            <li>Make sure Python and DNAChisel are properly installed</li>
+            <li>If using CodonOptimize, ensure the region is divisible by 3</li>
+            <li>Try with fewer constraints</li>
+          </ul>
+        </p>
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -261,6 +308,11 @@ Sequence length: ${result.optimized_sequence.length} bp`;
                   })}
                 />
               </div>
+              {selectionWarning && (
+                <div className="selection-warning">
+                  {selectionWarning}
+                </div>
+              )}
             </div>
           </div>
           
@@ -404,11 +456,7 @@ Sequence length: ${result.optimized_sequence.length} bp`;
             ))}
           </div>
           
-          {optimizationError && (
-            <div className="error-message">
-              {optimizationError}
-            </div>
-          )}
+          {renderError()}
         </div>
         
         <div className="sequence-optimizer-footer">

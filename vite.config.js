@@ -27,6 +27,14 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       open: true,
+      proxy: {
+        // Proxy API requests to our Express server
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false,
+        }
+      },
     },
     resolve: {
       alias: {

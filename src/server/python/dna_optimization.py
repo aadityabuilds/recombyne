@@ -60,24 +60,47 @@ def create_constraint(constraint_data: Dict[str, Any]):
     
     # Parameter-specific fixes and validation
     if constraint_type == "AvoidHairpins":
-        # Check for common parameter name confusion
+        # Handle both stem_size and min_stem_size parameters
         if "min_stem_size" in data and "stem_size" not in data:
-            print("Warning: Fixing parameter 'min_stem_size' to 'stem_size'")
+            print("Warning: Converting parameter 'min_stem_size' to 'stem_size'")
             data["stem_size"] = data.pop("min_stem_size")
+        
+        # Validate the stem_size parameter is present
+        if "stem_size" not in data:
+            print("Warning: Missing required parameter 'stem_size' for AvoidHairpins")
+            # Set a reasonable default value
+            data["stem_size"] = 6
+    
+    # Convert numeric string parameters to proper types if needed
+    for param, value in list(data.items()):
+        if isinstance(value, str) and value.replace('.', '', 1).isdigit():
+            # Try to convert the string to an appropriate numeric type
+            try:
+                if '.' in value:
+                    data[param] = float(value)
+                else:
+                    data[param] = int(value)
+                print(f"Converted parameter '{param}' from string to numeric: {value} -> {data[param]}")
+            except ValueError:
+                # Keep as string if conversion fails
+                pass
     
     # Add additional debugging
     print(f"Creating constraint {constraint_type} with parameters: {data}")
     
     try:
         return CONSTRAINT_TYPES[constraint_type](**data)
-    except TypeError as e:
-        print(f"Error creating constraint {constraint_type}: {str(e)}")
+    except Exception as e:
+        error_msg = f"Error creating constraint {constraint_type}: {str(e)}"
+        print(error_msg)
         # Try to provide helpful error information
         import inspect
         param_names = list(inspect.signature(CONSTRAINT_TYPES[constraint_type].__init__).parameters.keys())[1:]
         print(f"Expected parameters for {constraint_type}: {param_names}")
         print(f"Provided parameters: {list(data.keys())}")
-        raise
+        
+        # Create a more user-friendly error message
+        raise ValueError(f"Failed to create constraint {constraint_type}: {str(e)}")
 
 def create_objective(objective_data: Dict[str, Any]):
     """Create an objective object from objective data"""
@@ -92,19 +115,57 @@ def create_objective(objective_data: Dict[str, Any]):
     if "location" in data and isinstance(data["location"], list):
         data["location"] = tuple(data["location"])
     
+    # Parameter-specific fixes for CodonOptimize
+    if objective_type == "CodonOptimize":
+        # Make sure species parameter exists and is valid
+        if "species" not in data:
+            print("Warning: Missing 'species' parameter for CodonOptimize, defaulting to 'e_coli'")
+            data["species"] = "e_coli"
+        
+        # Adjust the location to ensure it's divisible by 3 for codon optimization
+        if "location" in data:
+            start, end = data["location"]
+            length = end - start
+            if length % 3 != 0:
+                # Adjust the end to make the length divisible by 3
+                adjusted_end = start + (length - (length % 3))
+                if adjusted_end > start:  # Ensure we have a valid range
+                    print(f"Warning: Adjusting CodonOptimize location from {data['location']} to ({start}, {adjusted_end}) to ensure length is divisible by 3")
+                    data["location"] = (start, adjusted_end)
+                else:
+                    print(f"Warning: CodonOptimize location {data['location']} is too short for codon optimization. Removing objective.")
+                    return None
+    
+    # Convert numeric string parameters to proper types if needed
+    for param, value in list(data.items()):
+        if isinstance(value, str) and value.replace('.', '', 1).isdigit():
+            # Try to convert the string to an appropriate numeric type
+            try:
+                if '.' in value:
+                    data[param] = float(value)
+                else:
+                    data[param] = int(value)
+                print(f"Converted parameter '{param}' from string to numeric: {value} -> {data[param]}")
+            except ValueError:
+                # Keep as string if conversion fails
+                pass
+    
     # Add additional debugging
     print(f"Creating objective {objective_type} with parameters: {data}")
     
     try:
         return OBJECTIVE_TYPES[objective_type](**data)
-    except TypeError as e:
-        print(f"Error creating objective {objective_type}: {str(e)}")
+    except Exception as e:
+        error_msg = f"Error creating objective {objective_type}: {str(e)}"
+        print(error_msg)
         # Try to provide helpful error information
         import inspect
         param_names = list(inspect.signature(OBJECTIVE_TYPES[objective_type].__init__).parameters.keys())[1:]
         print(f"Expected parameters for {objective_type}: {param_names}")
         print(f"Provided parameters: {list(data.keys())}")
-        raise
+        
+        # Create a more user-friendly error message
+        raise ValueError(f"Failed to create objective {objective_type}: {str(e)}")
 
 def optimize_sequence(
     sequence: str,
@@ -137,7 +198,31 @@ def optimize_sequence(
     try:
         # Create constraint and objective objects
         constraint_objects = [create_constraint(c) for c in constraints]
-        objective_objects = [create_objective(o) for o in objectives]
+        
+        # Filter None values that might be returned if an objective is invalid
+        objective_objects = []
+        for o in objectives:
+            obj = create_objective(o)
+            if obj is not None:
+                objective_objects.append(obj)
+        
+        # If we have CodonOptimize objectives but couldn't create any valid ones, return error
+        has_codon_optimize_request = any(o["type"] == "CodonOptimize" for o in objectives)
+        has_valid_codon_optimize = False
+        
+        # Check if any of the created objectives are CodonOptimize
+        for obj in objective_objects:
+            obj_class_name = obj.__class__.__name__
+            if obj_class_name == "CodonOptimize":
+                has_valid_codon_optimize = True
+                break
+        
+        if has_codon_optimize_request and not has_valid_codon_optimize and len(objective_objects) < len(objectives):
+            return {
+                "success": False,
+                "error": "Failed to create valid CodonOptimize objectives. Sequence length must be divisible by 3 for codon optimization.",
+                "traceback": "Adjusted sequence length would be invalid or too short."
+            }
         
         # Create the optimization problem
         if is_circular:
@@ -157,12 +242,12 @@ def optimize_sequence(
         problem.resolve_constraints()
         
         # Optimize with respect to objectives
-        if objectives:
+        if objective_objects:
             problem.optimize()
         
         # Get optimization reports
         constraints_text = problem.constraints_text_summary()
-        objectives_text = problem.objectives_text_summary() if objectives else ""
+        objectives_text = problem.objectives_text_summary() if objective_objects else ""
         
         # Create result
         result = {

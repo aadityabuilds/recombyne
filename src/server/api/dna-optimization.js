@@ -29,6 +29,19 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'Sequence is required' });
     }
 
+    // Validate sequence length
+    console.log(`Processing sequence of length: ${sequence.length}`);
+    if (sequence.length > 100000) {
+      return res.status(400).json({ 
+        error: 'Sequence too long', 
+        details: 'Sequences longer than 100,000 bp are not supported for optimization'
+      });
+    }
+
+    // Log constraints and objectives for debugging
+    console.log('Constraints:', JSON.stringify(constraints.map(c => c.type)));
+    console.log('Objectives:', JSON.stringify(objectives.map(o => o.type)));
+
     // Create a temp directory for the files
     const tempDir = path.join(os.tmpdir(), 'recombyne-dnachisel');
     if (!fs.existsSync(tempDir)) {
@@ -65,7 +78,7 @@ async function handler(req, res) {
       }
       
       // Log the contents of the input file for debugging
-      console.log('Input file content:', fs.readFileSync(inputFile, 'utf8'));
+      console.log('Input file content length:', fs.readFileSync(inputFile, 'utf8').length);
       
       const pythonProcess = spawn('python3', [pythonScript, inputFile, outputFile]);
       
@@ -87,8 +100,19 @@ async function handler(req, res) {
         console.log('Python process exited with code', code);
         
         if (code !== 0) {
-          console.error('Error:', errorData);
-          return res.status(500).json({ error: 'DNA optimization failed', details: errorData });
+          console.error('Error during Python execution:', errorData);
+          
+          // Extract specific error message if available
+          let detailedError = errorData;
+          const errorMatch = errorData.match(/Error[^:]*:\s*([^\n]+)/);
+          if (errorMatch && errorMatch[1]) {
+            detailedError = errorMatch[1].trim();
+          }
+          
+          return res.status(500).json({ 
+            error: 'DNA optimization failed', 
+            details: detailedError || 'Python process exited with an error'
+          });
         }
 
         // Read the output file
@@ -120,6 +144,16 @@ async function handler(req, res) {
           try {
             const outputData = JSON.parse(fileContent);
             console.log('Successfully parsed output JSON');
+            
+            // Check for error in the returned data
+            if (outputData.success === false) {
+              console.error('Optimization error from Python:', outputData.error);
+              return res.status(500).json({
+                error: 'DNA optimization failed',
+                details: outputData.error || 'Unknown error during optimization',
+                traceback: outputData.traceback
+              });
+            }
             
             // Clean up temp files
             try {
@@ -153,7 +187,10 @@ async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error in DNA optimization handler:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
   }
 }
 

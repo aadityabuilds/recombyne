@@ -1,0 +1,235 @@
+.sequence-optimizer-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.sequence-optimizer-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: modal-slide-in 0.3s ease;
+}
+
+@keyframes modal-slide-in {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.sequence-optimizer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 1px solid #eaeaea;
+  position: relative;
+}
+
+.sequence-optimizer-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.close-button {
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #333;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #000;
+}
+
+.sequence-optimizer-content {
+  flex: 1;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+
+.optimization-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.optimization-section:last-child {
+  border-bottom: none;
+}
+
+.section-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.optimization-option {
+  margin-bottom: 12px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.checkbox-option input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.checkbox-option label {
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.parameter-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding-left: 24px;
+}
+
+.parameter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.parameter-group label {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.parameter-group input,
+.parameter-group select {
+  width: 80px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.parameter-group select {
+  width: auto;
+  min-width: 100px;
+}
+
+.region-selector {
+  margin-top: 16px;
+}
+
+.region-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.region-inputs input {
+  width: 80px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.sequence-optimizer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 25px 25px;
+  border-top: 1px solid #eaeaea;
+}
+
+.cancel-button,
+.optimize-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.cancel-button {
+  background-color: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.cancel-button:hover {
+  background-color: #f5f5f5;
+}
+
+.optimize-button {
+  background-color: #0F518A;
+  color: white;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.optimize-button:hover {
+  background-color: #0a3e6c;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.optimize-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.optimize-button:disabled {
+  background-color: #6b96b9;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.error-message {
+  margin-top: 16px;
+  padding: 10px;
+  background-color: #ffe9e9;
+  border-left: 3px solid #ff5252;
+  color: #d32f2f;
+  border-radius: 4px;
+}

@@ -7,6 +7,7 @@ import { analyzePlasmidWithAI } from '../services/OpenAIService';
 import ReactMarkdown from 'react-markdown';
 import GenBankSearchPopup from './GenBankSearchPopup';
 import PlasmidSelectorModal from './PlasmidSelectorModal';
+import SequenceOptimizerModal from './SequenceOptimizerModal';
 
 // Utility function to debounce rapid operations
 const debounce = (func, wait = 300) => {
@@ -23,13 +24,15 @@ const debounce = (func, wait = 300) => {
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! I'm your AI copilot for plasmid sequence design. I can help with:\n\n- Analyzing plasmids\n- Answering molecular biology questions\n- Providing step-by-step guidance for your cloning goals\n- Finding plasmid backbone sequences\n\nJust tell me what you're working on, and I'll help you achieve your experimental goals!", sender: 'ai' }
+    { id: 1, text: "Hello! I'm your AI copilot for plasmid sequence design. I can help with:\n\n- Analyzing plasmids\n- Answering molecular biology questions\n- Providing step-by-step guidance for your cloning goals\n- Finding plasmid backbone sequences\n- Optimizing DNA sequences\n\nJust tell me what you're working on, and I'll help you achieve your experimental goals!", sender: 'ai' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isGenBankPopupOpen, setIsGenBankPopupOpen] = useState(false);
   const [isPlasmidSelectorOpen, setIsPlasmidSelectorOpen] = useState(false);
+  const [isSequenceOptimizerOpen, setIsSequenceOptimizerOpen] = useState(false);
+  const [currentSequence, setCurrentSequence] = useState("");
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to the bottom of the message list
@@ -74,6 +77,58 @@ const ChatInterface = () => {
   // Function to close plasmid selector modal
   const closePlasmidSelector = () => {
     setIsPlasmidSelectorOpen(false);
+  };
+  
+  // Function to handle optimize button click
+  const handleOptimizeClick = () => {
+    // Get current sequence from the editor
+    const state = store.getState();
+    const editorState = state.VectorEditor?.DemoEditor;
+    
+    if (!editorState || !editorState.sequenceData || !editorState.sequenceData.sequence) {
+      // Add a message if no sequence is available
+      const noSequenceMessage = {
+        id: Date.now(),
+        text: "Please load a sequence into the editor first before optimizing.",
+        sender: 'ai'
+      };
+      setMessages(prev => [...prev, noSequenceMessage]);
+      return;
+    }
+    
+    // Get the sequence data
+    const sequence = editorState.sequenceData.sequence;
+    setCurrentSequence(sequence);
+    
+    // Add a message about optimization
+    const optimizingMessage = {
+      id: Date.now(),
+      text: "Opening the sequence optimizer. You can specify constraints like GC content, restriction site avoidance, and codon optimization parameters.",
+      sender: 'ai'
+    };
+    setMessages(prev => [...prev, optimizingMessage]);
+    
+    // Open the optimizer modal
+    setIsSequenceOptimizerOpen(true);
+  };
+  
+  // Handle optimization completion
+  const handleOptimizeComplete = (optimizedSequence, summary) => {
+    // Update the sequence in the editor
+    updateEditor(store, "DemoEditor", {
+      sequenceData: {
+        ...store.getState().VectorEditor.DemoEditor.sequenceData,
+        sequence: optimizedSequence
+      }
+    });
+    
+    // Add a success message with the optimization summary
+    const successMessage = {
+      id: Date.now(),
+      text: `Successfully optimized your sequence! ${summary}`,
+      sender: 'ai'
+    };
+    setMessages(prev => [...prev, successMessage]);
   };
 
   // Check if query is related to plasmid backbones
@@ -245,14 +300,14 @@ const ChatInterface = () => {
         <div className="chat-bottom-container">
           <div className="search-button-container">
             <button 
-              className="action-button find-sequences-button"
+              className="sequence-action-button"
               onClick={openGenBankSearchPopup}
             >
               Find Sequences
             </button>
             <button 
-              className="action-button optimize-button"
-              onClick={() => {/* Optimize functionality will be implemented later */}}
+              className="sequence-action-button"
+              onClick={handleOptimizeClick}
             >
               Optimize
             </button>
@@ -289,6 +344,15 @@ const ChatInterface = () => {
           onClose={closePlasmidSelector} 
         />
       )}
+      <SequenceOptimizerModal
+        isOpen={isSequenceOptimizerOpen}
+        onClose={() => setIsSequenceOptimizerOpen(false)}
+        sequence={currentSequence}
+        onOptimizeComplete={(optimizedSequence, summary) => {
+          handleOptimizeComplete(optimizedSequence, summary);
+          setIsSequenceOptimizerOpen(false);
+        }}
+      />
     </>
   );
 };

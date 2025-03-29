@@ -69,6 +69,27 @@ npm run dev
 yarn dev
 ```
 
+### Environment Variables
+
+The application requires several environment variables to function properly. A complete list of required variables can be found in `.env.example`. Here's what each variable is used for:
+
+- **Server Configuration**
+  - `SERVER_PORT`: Port for the Express server (default: 3001)
+  - `PYTHONPATH`: Path to Python executable for DNA optimization
+
+- **OpenAI Configuration**
+  - `REACT_APP_OPENAI_API_KEY`: Your OpenAI API key for AI features
+
+- **NCBI Configuration**
+  - `REACT_APP_NCBI_EMAIL`: Your email for NCBI API requests
+  - `REACT_APP_NCBI_TOOL_NAME`: Name of your tool for NCBI API
+  - `REACT_APP_NCBI_API_KEY`: Your NCBI API key for enhanced access
+
+- **Development Configuration**
+  - `REACT_APP_USE_MOCK_API`: Set to false for production
+
+Copy `.env.example` to `.env.local` and replace the placeholder values with your actual credentials. Never commit your `.env.local` file to version control.
+
 ### Development Server
 
 The application uses a dual-server setup:

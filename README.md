@@ -10,6 +10,7 @@ Recombyne is an advanced web-based plasmid design application that combines the 
 - **Real-time Sequence Visualization**: Utilizes @teselagen/ove for interactive DNA sequence viewing and editing
 - **Smart Backbone Selection**: Browse and insert pre-built plasmid backbones with category-based organization
 - **GenBank Integration**: Search and import sequences directly from NCBI GenBank
+- **DNA Optimization**: Optimize sequences using DNAChisel for GC content, codon usage, and more
 - **Context-Aware AI**: Maintains conversation history for consistent and accurate assistance
 - **Modern UI**: Clean, responsive design with intuitive split-pane layout
 
@@ -38,6 +39,7 @@ We are grateful to the maintainers and contributors of these projects for making
 
 - Node.js (v18 or higher)
 - npm or yarn package manager
+- Python 3.x
 - OpenAI API key (for AI functionality)
 - NCBI API key (for GenBank integration)
 
@@ -49,20 +51,34 @@ git clone https://github.com/yourusername/recombyne.git
 cd recombyne
 ```
 
-2. Install dependencies:
+2. Install Node.js dependencies:
 ```bash
 npm install
 # or
 yarn install
 ```
 
-3. Set up environment variables:
-Copy the `.env.example` file to `.env` in the root directory and update the values:
+3. Install Python dependencies (required for DNA optimization):
 ```bash
-cp .env.example .env
+# Install DNAChisel with reports functionality
+pip3 install "dnachisel[reports]"
 ```
 
-4. Start the development server:
+4. Set up environment variables:
+   - Copy the `.env.example` file to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   - Find your Python path:
+   ```bash
+   which python3
+   ```
+   - Update the `.env` file with:
+     - Your Python path (PYTHONPATH)
+     - Your OpenAI API key
+     - Your NCBI credentials
+
+5. Start the development server:
 ```bash
 npm run dev
 # or
@@ -73,13 +89,43 @@ The application will be available at:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 
+### DNA Optimization Setup
+
+The DNA optimization feature requires proper setup of Python and DNAChisel:
+
+1. **Python Setup**:
+   - Ensure Python 3.x is installed on your system
+   - Find your Python path using `which python3` (Unix/Mac) or `where python3` (Windows)
+   - Update the `PYTHONPATH` in your `.env` file with the correct path
+
+2. **DNAChisel Installation**:
+   ```bash
+   # Install with all optimization features
+   pip3 install "dnachisel[reports]"
+   ```
+
+3. **Verify Installation**:
+   ```bash
+   # Run the test script to verify DNA optimization works
+   python3 src/server/python/test_optimization.py
+   ```
+
+4. **Common Issues**:
+   - If you see "Python path: Not set" in the server logs but optimization still works, this is normal
+   - If optimization fails, verify:
+     - DNAChisel is installed correctly
+     - Python path in `.env` is correct
+     - The sequence length is valid (must be divisible by 3 for codon optimization)
+
 ### Environment Variables
 
 The application requires several environment variables to function properly. Here's what each variable is used for:
 
 - **Server Configuration**
   - `SERVER_PORT`: Port for the Express server (default: 3001)
-  - `PYTHONPATH`: Path to Python executable for DNA optimization (default: /usr/local/bin/python3)
+  - `PYTHONPATH`: Path to Python executable for DNA optimization
+    - Find using `which python3` (Unix/Mac) or `where python3` (Windows)
+    - Must point to a Python installation with DNAChisel installed
 
 - **OpenAI Configuration**
   - `REACT_APP_OPENAI_API_KEY`: Your OpenAI API key for AI features
@@ -114,12 +160,18 @@ npm install --legacy-peer-deps
    - Ports 3000 and 3001 are not in use by other applications
    - You have the correct Node.js version installed
 
-3. For NCBI API issues:
+3. For DNA optimization issues:
+   - Verify Python path is correct in `.env`
+   - Ensure DNAChisel is installed: `pip3 install "dnachisel[reports]"`
+   - Run the test script: `python3 src/server/python/test_optimization.py`
+   - Check sequence length is valid for optimization
+
+4. For NCBI API issues:
    - Ensure your NCBI API key is valid
    - Check your email is correctly set
    - Verify your tool name is properly configured
 
-4. For OpenAI API issues:
+5. For OpenAI API issues:
    - Verify your API key is valid and has sufficient credits
    - Check your network connection to OpenAI's servers
 

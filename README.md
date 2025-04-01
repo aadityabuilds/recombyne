@@ -39,6 +39,7 @@ We are grateful to the maintainers and contributors of these projects for making
 - Node.js (v18 or higher)
 - npm or yarn package manager
 - OpenAI API key (for AI functionality)
+- NCBI API key (for GenBank integration)
 
 ### Installation
 
@@ -56,10 +57,9 @@ yarn install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory with the following content:
-```
-VITE_OPENAI_API_KEY=your_openai_api_key_here
-VITE_NCBI_API_KEY=your_ncbi_api_key_here
+Copy the `.env.example` file to `.env` in the root directory and update the values:
+```bash
+cp .env.example .env
 ```
 
 4. Start the development server:
@@ -69,42 +69,60 @@ npm run dev
 yarn dev
 ```
 
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+
 ### Environment Variables
 
-The application requires several environment variables to function properly. A complete list of required variables can be found in `.env.example`. Here's what each variable is used for:
+The application requires several environment variables to function properly. Here's what each variable is used for:
 
 - **Server Configuration**
   - `SERVER_PORT`: Port for the Express server (default: 3001)
-  - `PYTHONPATH`: Path to Python executable for DNA optimization
+  - `PYTHONPATH`: Path to Python executable for DNA optimization (default: /usr/local/bin/python3)
 
 - **OpenAI Configuration**
   - `REACT_APP_OPENAI_API_KEY`: Your OpenAI API key for AI features
+    - Get your key from: https://platform.openai.com/api-keys
 
 - **NCBI Configuration**
   - `REACT_APP_NCBI_EMAIL`: Your email for NCBI API requests
-  - `REACT_APP_NCBI_TOOL_NAME`: Name of your tool for NCBI API
+  - `REACT_APP_NCBI_TOOL_NAME`: Name of your tool for NCBI API (default: recombyne-plasmid-editor)
   - `REACT_APP_NCBI_API_KEY`: Your NCBI API key for enhanced access
+    - Get your key from: https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/
 
 - **Development Configuration**
   - `REACT_APP_USE_MOCK_API`: Set to false for production
 
-Copy `.env.example` to `.env.local` and replace the placeholder values with your actual credentials. Never commit your `.env.local` file to version control.
-
 ### Development Server
 
 The application uses a dual-server setup:
-- Frontend: Vite development server 
-- Backend: Express server 
+- Frontend: Vite development server (port 3000)
+- Backend: Express server (port 3001)
 
-Both servers run concurrently using the `concurrently` package.
+Both servers run concurrently using the `concurrently` package. The `npm run dev` command starts both servers simultaneously.
 
-### Building for Production
+### Troubleshooting
 
-To build the application for production:
+1. If you encounter dependency conflicts during installation, you can try:
 ```bash
-npm run build
-# or
-yarn build
+npm install --legacy-peer-deps
 ```
 
-The production build will be available in the `dist` directory.
+2. If the application fails to start, check:
+   - All required environment variables are set correctly
+   - Ports 3000 and 3001 are not in use by other applications
+   - You have the correct Node.js version installed
+
+3. For NCBI API issues:
+   - Ensure your NCBI API key is valid
+   - Check your email is correctly set
+   - Verify your tool name is properly configured
+
+4. For OpenAI API issues:
+   - Verify your API key is valid and has sufficient credits
+   - Check your network connection to OpenAI's servers
+
+### Stopping the Application
+
+To stop the application, press `Ctrl+C` in the terminal. This will gracefully shut down both the frontend and backend servers.

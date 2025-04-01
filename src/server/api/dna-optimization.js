@@ -66,9 +66,19 @@ async function handler(req, res) {
     // Path to Python script
     const pythonScript = path.join(process.cwd(), 'src', 'server', 'python', 'dna_optimization.py');
 
-    console.log('Running DNA optimization with input file:', inputFile);
-    console.log('Using Python script at:', pythonScript);
+    console.log('Environment variables:', {
+      PYTHONPATH: process.env.PYTHONPATH,
+      PYTHON_BINARY: process.env.PYTHON_BINARY,
+      NODE_ENV: process.env.NODE_ENV
+    });
     
+    console.log('Running DNA optimization with:', {
+      pythonScript,
+      inputFile,
+      outputFile,
+      tempDir
+    });
+
     return new Promise((resolve, reject) => {
       // Run the Python script
       // Verify Python script exists
@@ -78,9 +88,17 @@ async function handler(req, res) {
       }
       
       // Log the contents of the input file for debugging
-      console.log('Input file content length:', fs.readFileSync(inputFile, 'utf8').length);
+      console.log('Input file content:', fs.readFileSync(inputFile, 'utf8'));
       
-      const pythonProcess = spawn('python3', [pythonScript, inputFile, outputFile]);
+      const pythonBinary = process.env.PYTHON_BINARY || 'python3';
+      console.log('Using Python binary:', pythonBinary);
+      
+      const pythonProcess = spawn(pythonBinary, [pythonScript, inputFile, outputFile], {
+        env: {
+          ...process.env,
+          PYTHONPATH: process.env.PYTHONPATH || path.join(process.cwd(), 'src', 'server', 'python')
+        }
+      });
       
       let errorData = '';
       pythonProcess.stderr.on('data', (data) => {
@@ -131,7 +149,7 @@ async function handler(req, res) {
           }
           
           const fileContent = fs.readFileSync(outputFile, 'utf8');
-          console.log('File content length:', fileContent.length);
+          console.log('Output file content:', fileContent);
           
           if (!fileContent || fileContent.trim() === '') {
             console.error('Empty output file');

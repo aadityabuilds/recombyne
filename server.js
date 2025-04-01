@@ -1,5 +1,5 @@
 // Load environment variables
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config();
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -11,6 +11,15 @@ const dnaOptimization = require('./src/server/api/dna-optimization');
 // Initialize express
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
+
+// Debug logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  if (req.path.includes('dna-optimization')) {
+    console.log('DNA Optimization Request Body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
 
 // Security middleware
 app.use(securityMiddleware);
@@ -29,7 +38,7 @@ app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 
 // API routes
-app.use('/api/dna-optimization', dnaOptimization);
+app.post('/api/dna-optimization', dnaOptimization);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -44,4 +53,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`API Server running on port ${PORT}`);
   console.log(`Python path: ${process.env.PYTHONPATH || 'Not set'}`);
+  console.log('Environment:', process.env.NODE_ENV || 'development');
 }); 

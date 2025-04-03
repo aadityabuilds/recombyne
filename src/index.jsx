@@ -5,6 +5,10 @@ import { Provider } from "react-redux";
 import {
   Loading
 } from "@teselagen/ui";
+import setupSecureAxios from './middleware/axiosMiddleware';
+
+// Initialize secure Axios configuration
+setupSecureAxios();
 
 import store from "./store";
 import "./fonts.css";

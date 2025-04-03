@@ -3,6 +3,8 @@
  * Handles the interaction with NCBI's Entrez API to import sequences from Genbank
  */
 
+import secureAxios from '../utils/axiosConfig';
+
 // Configuration
 const ENTREZ_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 const GENBANK_DATABASE = 'nucleotide';
@@ -21,45 +23,27 @@ import { convertNaturalLanguageToEntrezParams } from './OpenAIService';
  */
 export const searchGenbank = async (searchParams) => {
   try {
-    const { term, organism, gene, maxResults = DEFAULT_RETURN_MAX, sort = 'relevance' } = searchParams;
-    
-    // Build the search term with specific organism and gene if provided
-    let finalSearchTerm = term;
-    
-    // If organism and gene are provided separately but not already in the term
-    if (organism && !term.includes(`${organism}[ORGN]`)) {
-      finalSearchTerm = finalSearchTerm ? `${finalSearchTerm} AND ${organism}[ORGN]` : `${organism}[ORGN]`;
-    }
-    
-    if (gene && !term.includes(`${gene}[GENE]`)) {
-      finalSearchTerm = finalSearchTerm ? `${finalSearchTerm} AND ${gene}[GENE]` : `${gene}[GENE]`;
-    }
-    
-    console.log('Final search term:', finalSearchTerm);
-    
-    // Build the ESearch URL
-    const searchUrl = new URL(`${ENTREZ_BASE_URL}/esearch.fcgi`);
-    searchUrl.searchParams.append('db', GENBANK_DATABASE);
-    searchUrl.searchParams.append('term', finalSearchTerm);
-    searchUrl.searchParams.append('retmax', maxResults);
-    searchUrl.searchParams.append('sort', sort);
-    searchUrl.searchParams.append('retmode', 'json');
-    searchUrl.searchParams.append('tool', TOOL_NAME);
-    searchUrl.searchParams.append('email', EMAIL);
-    
-    // Add API key if available
+    const params = {
+      db: GENBANK_DATABASE,
+      retmax: DEFAULT_RETURN_MAX,
+      retmode: 'json',
+      email: EMAIL,
+      tool: TOOL_NAME,
+      ...searchParams
+    };
+
     if (NCBI_API_KEY) {
-      searchUrl.searchParams.append('api_key', NCBI_API_KEY);
+      params.api_key = NCBI_API_KEY;
     }
-    
-    // Execute the search
-    const response = await fetch(searchUrl);
-    if (!response.ok) {
-      throw new Error(`NCBI API error: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data;
+
+    const response = await secureAxios.get(`${ENTREZ_BASE_URL}/esearch.fcgi`, {
+      params,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    return response.data;
   } catch (error) {
     console.error('Error searching Genbank:', error);
     throw error;

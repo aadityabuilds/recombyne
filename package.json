@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@teselagen/ove": "0.3.48",
+    "@teselagen/ove": "^0.3.65",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",
@@ -41,6 +41,12 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.3",
     "concurrently": "^8.2.2",
-    "vite": "4.3.6"
+    "vite": "^6.2.6"
+  },
+  "resolutions": {
+    "lodash": "^4.17.21",
+    "path-to-regexp": "^6.2.1",
+    "axios": "^1.6.7",
+    "@babel/traverse": "^7.23.2"
   }
 }

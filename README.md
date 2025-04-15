@@ -46,7 +46,7 @@ We are grateful to the maintainers and contributors of these projects for making
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/recombyne.git
-cd recombyne
+cd recombyne-18
 ```
 
 2. Install dependencies:
@@ -62,17 +62,33 @@ Copy the `.env.example` file to `.env` in the root directory and update the valu
 cp .env.example .env
 ```
 
-4. Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
+4. Build the application:
+- To build only the frontend:
+  ```bash
+  npm run build:frontend
+  ```
+- To build only the backend:
+  ```bash
+  npm run build:backend
+  ```
+
+5. Start the servers:
+- To start the backend server:
+  ```bash
+  npm run start:backend
+  ```
+- To start the frontend (development mode):
+  ```bash
+  npm start
+  # or
+  yarn start
+  ```
 
 The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+- Frontend: http://localhost:3000 (or the next available port, e.g., 3010)
+- Backend API: http://localhost:3001 (or as set in your .env)
 
+**Note:** If ports 3000/3001 are in use, Vite and the backend will select the next available port and display it in the terminal.
 ### Environment Variables
 
 The application requires several environment variables to function properly. Here's what each variable is used for:
@@ -97,11 +113,10 @@ The application requires several environment variables to function properly. Her
 ### Development Server
 
 The application uses a dual-server setup:
-- Frontend: Vite development server (port 3000)
-- Backend: Express server (port 3001)
+- **Frontend**: Vite development server (default port 3000, but will increment if busy)
+- **Backend**: Express server (default port 3001, configurable via `.env`)
 
-Both servers run concurrently using the `concurrently` package. The `npm run dev` command starts both servers simultaneously.
-
+You can start each server independently using the scripts above. This modular approach allows you to work on frontend or backend in isolation, or both together.
 ### Troubleshooting
 
 1. If you encounter dependency conflicts during installation, you can try:
@@ -111,15 +126,22 @@ npm install --legacy-peer-deps
 
 2. If the application fails to start, check:
    - All required environment variables are set correctly
-   - Ports 3000 and 3001 are not in use by other applications
+   - Ports 3000 and 3001 (or your specified ports) are not in use
    - You have the correct Node.js version installed
 
-3. For NCBI API issues:
+3. If the backend server fails to start or DNA optimization fails:
+   - Ensure Python 3 and all required Python dependencies (see `src/server/python/requirements.txt`) are installed:
+     ```bash
+     pip install -r src/server/python/requirements.txt
+     ```
+   - Check for errors in the backend server terminal for Python or API issues.
+
+4. For NCBI API issues:
    - Ensure your NCBI API key is valid
    - Check your email is correctly set
    - Verify your tool name is properly configured
 
-4. For OpenAI API issues:
+5. For OpenAI API issues:
    - Verify your API key is valid and has sufficient credits
    - Check your network connection to OpenAI's servers
 

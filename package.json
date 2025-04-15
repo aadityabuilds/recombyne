@@ -21,6 +21,9 @@
     "uuid": "^11.1.0"
   },
   "scripts": {
+    "build:frontend": "tsc -p tsconfig.frontend.json",
+    "build:backend": "tsc -p tsconfig.backend.json",
+    "start:backend": "node dist/server.js",
     "start": "vite --force",
     "build": "vite build",
     "build:server": "tsc",

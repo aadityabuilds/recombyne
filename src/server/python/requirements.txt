@@ -1,0 +1,7 @@
+dnachisel[reports]
+biopython
+numpy
+docopt
+flametree
+proglog
+python-codon-tables

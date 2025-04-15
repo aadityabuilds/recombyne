@@ -1,11 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import '../styles/SequenceOptimizerModal.css';
 
-/**
- * Modal component for sequence optimization using DNAChisel
- */
-function SequenceOptimizerModal({ isOpen, onClose, sequence, onOptimizeComplete }) {
+// TypeScript interfaces for constraints and objectives
+interface GCContentConstraint {
+  type: 'EnforceGCContent';
+  enabled: boolean;
+  mini: number;
+  maxi: number;
+  window: number;
+}
+interface AvoidPatternConstraint {
+  type: 'AvoidPattern';
+  enabled: boolean;
+  pattern: string;
+}
+interface AvoidHairpinsConstraint {
+  type: 'AvoidHairpins';
+  enabled: boolean;
+  hairpin_window: number;
+  stem_size: number;
+}
+type Constraint = GCContentConstraint | AvoidPatternConstraint | AvoidHairpinsConstraint;
+
+interface CodonOptimizeObjective {
+  type: 'CodonOptimize';
+  enabled: boolean;
+  species: string;
+  location: [number, number];
+}
+type Objective = CodonOptimizeObjective;
+
+interface SelectedRegion {
+  start: number;
+  end: number;
+}
+
+interface SequenceOptimizerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  sequence: string;
+  onOptimizeComplete: (optimizedSequence: string, summary: string) => void;
+}
+
+const SequenceOptimizerModal: React.FC<SequenceOptimizerModalProps> = ({ isOpen, onClose, sequence, onOptimizeComplete }) => {
+  // --- All logic and JSX for SequenceOptimizerModal should be here, in the typed component ---
+
   const dispatch = useDispatch();
   
   // State for optimization options

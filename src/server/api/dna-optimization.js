@@ -1,5 +1,7 @@
+"use strict";
 // DNA Optimization API
 // This endpoint bridges the frontend with the DNAChisel Python service
+Object.defineProperty(exports, "__esModule", { value: true });
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -162,4 +164,4 @@ async function handler(req, res) {
         });
     }
 }
-export default handler;
+exports.default = handler;
